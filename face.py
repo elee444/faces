@@ -2,13 +2,34 @@ import cv2
 import numpy as np
 import math
 
+Lx=100
+Ly=140
+Rx=340
+Ry=380
+boxx=(Rx-Lx)//3
+boxy=(Ry-Ly)//3
+dx=(Rx-Lx)//12
+dy=(Ry-Ly)//12
+imgs=[[None, None, None]]*3
+
+boxes=[]
+for e in range(3):
+    for f in range(3):
+        boxes.append([Lx+e*boxx+dx, Lx+(e+1)*boxx-dx, Ly+f*boxy+dy, Ly+(f+1)*boxy-dy])
+        
 
 capture = cv2.VideoCapture(2)
-
+#capture= cv2.VideoCapture("rubiks-side-L.png")
 def callback(num):
     return
+def funcRotate(degree=0):
+    degree = cv2.getTrackbarPos('degree','Frame')
+    rotation_matrix = cv2.getRotationMatrix2D((width / 2, height / 2), degree, 1)
+    rotated_image = cv2.warpAffine(original, rotation_matrix, (width, height))
+    #cv2.imshow('Rotate', rotated_image)
 
 cv2.namedWindow('Settings', 0)
+
 cv2.createTrackbar('Canny Thres 1', 'Settings', 87, 500, callback)
 cv2.createTrackbar('Canny Thres 2', 'Settings', 325, 500, callback)
 cv2.createTrackbar('Blur kSize', 'Settings', 9, 100, callback)
@@ -38,19 +59,24 @@ def computeContours(frame):
         cv2.bilateralFilter(cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY), gaus, cv2.getTrackbarPos('Blur Sigma X', 'Settings'), cv2.getTrackbarPos('Blur Sigma X', 'Settings')),
         cv2.getTrackbarPos('Canny Thres 1', 'Settings'),
         cv2.getTrackbarPos('Canny Thres 2', 'Settings'))
-
-    cv2.line(frame2, (100, 140), (400, 140), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (100, 240), (400, 240), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (100, 340), (400, 340), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (100, 440), (400, 440), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (100, 140), (100, 440), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (200, 140), (200, 440), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (300, 140), (300, 440), (0, 0, 0), thickness=4)
-    cv2.line(frame2, (400, 140), (400, 440), (0, 0, 0), thickness=4)
-    #(300,140) - (400,240)
-    pixel_b, pixel_g, pixel_r = frame2[350, 190]
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame2,str(pixel_r)+"/"+str(pixel_g)+"/"+str(pixel_b),(10,50), font, 1, (0, 0, 255), 1, cv2.LINE_AA)
+    
+    
+    
+    
+    for e in range(3):
+        for f in range(3):
+            cv2.line(frame2, (boxes[e+3*f][0], boxes[e+3*f][2]), (boxes[e+3*f][0], boxes[e+3*f][3]), (0,0,0), thickness=2)
+            cv2.line(frame2, (boxes[e+3*f][1], boxes[e+3*f][2]), (boxes[e+3*f][1], boxes[e+3*f][3]), (0,0,0), thickness=2)
+            cv2.line(frame2, (boxes[e+3*f][0], boxes[e+3*f][2]), (boxes[e+3*f][1], boxes[e+3*f][2]), (0,0,0), thickness=2)
+            cv2.line(frame2, (boxes[e+3*f][0], boxes[e+3*f][3]), (boxes[e+3*f][1], boxes[e+3*f][3]), (0,0,0), thickness=2)
+            imgs[e][f]=frame2[boxes[e+3*f][2]:boxes[e+3*f][3],boxes[e+3*f][0]:boxes[e+3*f][1]]
+            cv2.imshow("cropped"+str(e)+str(f), imgs[e][f])
+    
+    #cv2.imshow("cropped"+str(2)+str(2), imgs[2][2])
+    ##pixel_b, pixel_g, pixel_r = cv2.split(img3)
+    #pixel_b, pixel_g, pixel_r = img3
+    #font = cv2.FONT_HERSHEY_SIMPLEX
+    #cv2.putText(frame2,str(pixel_r)+"/"+str(pixel_g)+"/"+str(pixel_b),(10,50), font, 1, (0, 0, 255), 1, cv2.LINE_AA)
     #cv2.imshow("Canny Edge", canny);
     """
     kernel = np.ones((3,3), np.uint8)
@@ -80,6 +106,7 @@ def computeContours(frame):
     return frame2;
 
 while (capture.isOpened()):
+    #capture= cv2.VideoCapture("rubiks-side-L.png")
     ret, frame = capture.read()
 
     if ret:
