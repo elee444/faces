@@ -100,7 +100,7 @@ def computeContours(frame):
             g_avg = cv2.mean(g)[0]
             b_avg = cv2.mean(b)[0]
             c_colors[e][f]=getcolor(int(r_avg),int(g_avg),int(b_avg))
-            cv2.imshow("cropped"+str(e)+str(f)+str([int(r_avg),int(g_avg),int(b_avg)])+"/"+str(c_colors[e][f]), imgs[e][f])
+            cv2.imshow("cropped"+str(e)+str(f)+"[int(r_avg),int(g_avg),int(b_avg)]"+"/"+str(c_colors[e][f]), imgs[e][f])
     """        
     e=0
     f=0
