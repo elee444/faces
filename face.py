@@ -14,7 +14,7 @@ dx=(Rx-Lx)//12
 dy=(Ry-Ly)//12
 imgs=[[None, None, None]]*3 #cell images
 c_colors=[[None, None, None]]*3 #cell colors
-cells=[] #centers of cells on this face
+cells=[] #coordinates of the centers of cells on this face - 9 cells/face
 for e in range(3):
     for f in range(3):
         cells.append([Lx+e*boxx+dx, Lx+(e+1)*boxx-dx, Ly+f*boxy+dy, Ly+(f+1)*boxy-dy])
@@ -34,12 +34,12 @@ def getcolor(c): # compare rgb values and return color
         return 'y'
     elif (r >= 150 and r <= 255 ) and (g >= 70 and g <= 110) and (b >=0 and b <= 70): #checked
         return 'o'
-    elif (r >= 0 and r <= 70 ) and (g >= 0 and g <=70) and (b >= 100): #chcked
+    elif (r >= 0 and r <= 70 ) and (g >= 0 and g <=75) and (b >= 100): #chcked
         return 'b'
-    elif (r >= 0 and r <= 60 ) and (g >= 80 and g <= 130) and (b >= 40  and b <= 80): #checked
+    elif (r >= 0 and r <= 60 ) and (g >= 80 and g <= 160) and (b >= 40  and b <= 80): #checked
         return 'g'
     else:
-        pass
+        return '?'
 """    
 def funcRotate(degree=0):
     degree = cv2.getTrackbarPos('degree','Frame')
@@ -48,7 +48,7 @@ def funcRotate(degree=0):
     #cv2.imshow('Rotate', rotated_image)
 """
 
-def getAverageRGBN(image):
+def getAverageRGBN(image): #find the average colors (rgb) in image
   im = np.array(image)
   w,h,d = im.shape
   im.shape = (w*h, d)
@@ -60,19 +60,19 @@ def getAverageRGBN(image):
 def regFaces(frame):
     frame2 = frame.copy()
     font = cv2.FONT_HERSHEY_SIMPLEX
-    fontScale = 0.3  
+    fontScale = 0.33  
     color = (0, 0, 0)  
     thickness = 1    
     for e in range(3):
-        for f in range(3):  
-            cv2.line(frame2, (cells[e+3*f][0], cells[e+3*f][2]), (cells[e+3*f][0], cells[e+3*f][3]), (0,0,0), thickness=2)
-            cv2.line(frame2, (cells[e+3*f][1], cells[e+3*f][2]), (cells[e+3*f][1], cells[e+3*f][3]), (0,0,0), thickness=2)
-            cv2.line(frame2, (cells[e+3*f][0], cells[e+3*f][2]), (cells[e+3*f][1], cells[e+3*f][2]), (0,0,0), thickness=2)
-            cv2.line(frame2, (cells[e+3*f][0], cells[e+3*f][3]), (cells[e+3*f][1], cells[e+3*f][3]), (0,0,0), thickness=2)
+        for f in range(3):
+            #draw a small Quadrilateral in each cell
+            cv2.rectangle(frame2, (cells[e+3*f][0], cells[e+3*f][2]), (cells[e+3*f][1], cells[e+3*f][3]), (0, 0, 0))
+            #crop cells
             imgs[e][f]=frame2[cells[e+3*f][2]:cells[e+3*f][3],cells[e+3*f][0]:cells[e+3*f][1]]
             c_colors[e][f]=getcolor(getAverageRGBN(imgs[e][f])) #return color; r/g/...
+            #put text-coordinates/colors
             frame2 = cv2.putText(frame2, str((e,f)),
-                                 ((4*cells[e+3*f][0]+cells[e+3*f][1])//5,(3*cells[e+3*f][2]+2*cells[e+3*f][3])//5),
+                                 ((5*cells[e+3*f][0]+0*cells[e+3*f][1])//5,(3*cells[e+3*f][2]+2*cells[e+3*f][3])//5),
                                  font,fontScale, color, thickness, cv2.LINE_AA)
             frame2 = cv2.putText(frame2, c_colors[e][f],
                                  ((4*cells[e+3*f][0]+cells[e+3*f][1])//5,(1*cells[e+3*f][2]+4*cells[e+3*f][3])//5),
@@ -81,25 +81,25 @@ def regFaces(frame):
 
 cv2.namedWindow('Settings', 0)
 
-#cv2.createTrackbar('Canny Thres 1', 'Settings', 87, 500, callback)
-#cv2.createTrackbar('Canny Thres 2', 'Settings', 325, 500, callback)
-#cv2.createTrackbar('Blur kSize', 'Settings', 9, 100, callback)
-#cv2.createTrackbar('Blur Sigma X', 'Settings', 75, 100, callback)
-#cv2.createTrackbar('Dilation Iterations', 'Settings', 2, 20, callback)
-#cv2.createTrackbar('Blob Area', 'Settings', 700, 1000, callback)
 """
+cv2.createTrackbar('Canny Thres 1', 'Settings', 87, 500, callback)
+cv2.createTrackbar('Canny Thres 2', 'Settings', 325, 500, callback)
+cv2.createTrackbar('Blur kSize', 'Settings', 9, 100, callback)
+cv2.createTrackbar('Blur Sigma X', 'Settings', 75, 100, callback)
+cv2.createTrackbar('Dilation Iterations', 'Settings', 2, 20, callback)
+cv2.createTrackbar('Blob Area', 'Settings', 700, 1000, callback)
 cv2.createTrackbar('Contour R', 'Settings', 0, 255, callback)
 cv2.createTrackbar('Contour G', 'Settings', 0, 255, callback)
 cv2.createTrackbar('Contour B', 'Settings', 255, 255, callback)
-"""
 cv2.createTrackbar('Exposure', 'Settings', 5, 12, callback)
-
+"""
 
 def main():
-    input_image="face1.jpg"
-    read_image=0 #0:video - 1:image 
+    input_image="face2.jpg"
+    read_image=1 #0:video - 1:image
+    
     if read_image==0:
-        capture = cv2.VideoCapture(0)
+        capture = cv2.VideoCapture(2)
     else:
         capture= cv2.VideoCapture(input_image)
     while (capture.isOpened()):
