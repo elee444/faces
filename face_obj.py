@@ -1,5 +1,6 @@
 """
-face: 1 face = 3x3 square boxes, each box has a square cell indexed by (e=row, f=col).
+face: 1 face = 3x3 square boxes, each box has a square cell indexed by (e=row, f=col). Color of a box is determined
+by that of its cell.
 Top left = (0,0), Bottom left (2,0), etc.
     ----------------------------------
     |   ----   |   ----   |   ----   |          
