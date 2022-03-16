@@ -1,5 +1,5 @@
 """
-face: 1 face = 3x3 square boxes, each box has a square cell indexed by (e=row, f=col). Color of a box is determined
+face: 1 face = 3x3 square boxes, each box has a square cell indexed by (r=row, c=col). Color of a box is determined
 by that of its cell.
 Top left = (0,0), Bottom left (2,0), etc.
     ----------------------------------
@@ -16,11 +16,13 @@ Top left = (0,0), Bottom left (2,0), etc.
     |   ----   |   ----   |   ----   |
     ----------------------------------
 
-cell: bottom left corner coord =(y1,x1), top right corner corrd =(y2,x2). Each cell should be at the center of a box
+cell: top left corner coord =(cx1,ry1), bottom right corner corrd =(cx2, ry2).
+Each cell should be at the center of a box
+(cx1,ry1)
     ----
     |  |
     ----
-    
+        (cx2,ry2) 
 colors: the color (RGB) of each box is determined by the average color of the cell. Theoretically we only need to
 know the colors of the cells on (f)ront, (r)ight, (b)ack, (l)eft, and (t)op. The cells on (u)nder face can be
 deducted. We assume the (u)nder face should have white center.
@@ -31,8 +33,8 @@ import numpy as np
 import math
 
  # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
-def getcolor(c):
-    r,g,b=map(int,c)
+def getcolor(color):
+    r,g,b=map(int,color)
     if (r >= 110) and (g >= 0 and g <= 50) and (b >= 0 and b <=50): #checked
         return 'r'
     elif (r >= 150 and r <= 255 ) and (g >= 150 and g <= 255) and (b >= 150): #checked
@@ -58,23 +60,28 @@ def getAverageRGBN(image):
     return (r,g,b)
 
 #there are 9 cells in a face. One in each box.
+#(row, col): top left=(0,0), bottom left=(2,0). cx's= col, ry's=row
 class Cell:
-    def __init__(self, row=0,col=0, x1=0,x2=0,y1=0,y2=0): #(row, col): top left=(0,0), bottom left=(2,0)
-        self.x1=x1
-        self.x2=x2
-        self.y1=y1
-        self.y2=y2
+    #id=0
+    def __init__(self, row=0,col=0, cx1=0,cx2=0,ry1=0,ry2=0): 
+        self.cx1=cx1
+        self.cx2=cx2
+        self.ry1=ry1
+        self.ry2=ry2
         self.row=row
-        self.col=col
+        self.col=col  
+        #Cell.id=Cell.id+1
         self.color=None
-    def updateColor(self,c):
-        self.color=c
+    def updateColor(self,color):
+        self.color=color
     def getColor(self):
         return self.color
     def returnXY(self):
-        return [self.x1,self.x2,self.y1,self.y2]
+        return [self.cx1,self.cx2,self.ry1,self.ry2]
     def returnId(self):
         return [self.row,self.col]
+    def print(self):
+        print("(r,c)=",self.returnId()," cx1=",self.cx1, " cx2=",self.cx2, " ry1=",self.ry1, " ry2=",self.ry2)
 
     
 class Face:  #a face of a 3x3 cube
@@ -82,7 +89,7 @@ class Face:  #a face of a 3x3 cube
     fontScale = 0.33  
     color = (0, 0, 0)  
     thickness = 1
-    def __init__(self,id='f', x=200,y=30,h=210): #id='f,b,r,l,t,u'
+    def __init__(self,id='f', x=200,y=30,h=210): #id='f,b,r,l,t,u' default:x,y - top left box coord, h=side
         self.id=id
         self.Lx=x
         self.Ly=y
@@ -91,73 +98,69 @@ class Face:  #a face of a 3x3 cube
         self.Ry=self.Ly+self.h
         self.boxx=(self.Rx-self.Lx)//3
         self.boxy=(self.Ry-self.Ly)//3
-        self.dx=(self.Rx-self.Lx)//12
-        self.dy=(self.Ry-self.Ly)//12
-        self.imgs=[[None, None, None]]*3 #cell images
+        self.dx=(self.Rx-self.Lx)//24
+        self.dy=(self.Ry-self.Ly)//24
+        self.imgs=[None]*3 #cell images
         #self.c_colors=[[None, None, None]]*3 #cell colors
-        self.cells=[[None, None, None]]*3 #coordinates of the centers of cells on this face - 9 cells/face
-        for e in range(3):
-            for f in range(3):
-                print(e,f,self.Lx+e*self.boxx+self.dx, self.Lx+(e+1)*self.boxx-self.dx,
-                                   self.Ly+f*self.boxy+self.dy, self.Ly+(f+1)*self.boxy-self.dy)
-                (self.cells)[e][f]=Cell(e,f,self.Lx+e*self.boxx+self.dx, self.Lx+(e+1)*self.boxx-self.dx,
-                                   self.Ly+f*self.boxy+self.dy, self.Ly+(f+1)*self.boxy-self.dy)
+        self.cells=[None]*3 #coordinates of the centers of cells on this face - 9 cells/face
+        for r in range(3):
+            self.imgs[r]=[None]*3
+            self.cells[r]=[None]*3
+            for c in range(3):
+                (self.cells)[r][c]=Cell(r,c,self.Lx+c*self.boxx+3*self.dx, self.Lx+(c+1)*self.boxx-3*self.dx,
+                                   self.Ly+r*self.boxy+3*self.dy, self.Ly+(r+1)*self.boxy-3*self.dy)
         self.frame=None #image of this face/frame
+    
     #update frame each loop   
     def updateFace(self, newframe):
         self.frame=newframe
+    
     def returnFrame(self):
-        #for e in range(3):
-        #    for f in range(3):
-        #        print((self.cells[e][f]).returnId(), (self.cells[e][f]).returnXY())
         return self.frame
 
     def regFace(self): #find colors on this face (9 cells)
-        for e in range(3):
-            for f in range(3):
+        cv2.rectangle(self.frame, (self.Lx, self.Ly),(self.Rx,self.Ry), (255, 255, 255))
+        for r in range(3):
+            for c in range(3):
                 #draw a small Quadrilateral in each cell
-                x1,x2,y1,y2=(self.cells[e][f]).returnXY()
-                #print(e,f,x1,x2,y1,y2)
-                cv2.rectangle(self.frame, (x1, y1),(x2,y2), (0, 0, 0))
+                cx1,cx2,ry1,ry2=(self.cells[r][c]).returnXY()
+                cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
                 #crop cells
-                (self.imgs)[e][f]=self.frame[y1:y2,x1:x2]
-                (self.cells[e][f]).updateColor(getcolor(getAverageRGBN((self.imgs)[e][f])))
+                (self.imgs)[r][c]=self.frame[ry1:ry2,cx1:cx2]
+                (self.cells[r][c]).updateColor(getcolor(getAverageRGBN((self.imgs)[r][c])))
                 #put text-coordinates/colors
-                self.frame = cv2.putText(self.frame, str((e,f)),
-                                     ((5*x1+0*x1)//5,(3*y1+2*y2)//5),Face.font,Face.fontScale,
+                self.frame = cv2.putText(self.frame, str((r,c)),
+                                     ((5*cx1+0*cx1)//5,(3*ry1+2*ry2)//5),Face.font,Face.fontScale,
                                      Face.color, Face.thickness, cv2.LINE_AA)
-                self.frame = cv2.putText(self.frame, (self.cells[e][f]).getColor(),((4*x1+x2)//5,(1*y1+4*y2)//5),
+                self.frame = cv2.putText(self.frame, (self.cells[r][c]).getColor(),
+                                         ((4*cx1+1*cx2)//5,(1*ry1+4*ry2)//5),
                                      Face.font,Face.fontScale, Face.color, Face.thickness, cv2.LINE_AA)
-        #return frame2;
-
-    
-
-
-
-
 
 def main():
     cv2.namedWindow('Settings', 0)
     input_image="face2.jpg"
-    read_image=1 #0:video - 1:image
-    f1=Face(id='f')
+    read_image=0 #0:video - 1:image
+    f1=Face(id='f')#,x=400,y=200,h=300 )
     if read_image==0:
         capture = cv2.VideoCapture(2)
     else:
         capture= cv2.VideoCapture(input_image)
+    #set the width and height, and UNSUCCESSFULLY set the exposure time
+    capture.set(3,640) #width
+    capture.set(4,480) #height
+    capture.set(15, 10) #exposure
+
     while (capture.isOpened()):
-        frame = np.zeros((480,640))
+        #frame = np.zeros((480,640))
+        #frame = np.zeros((1024,1280))
         if read_image==1:
             capture= cv2.VideoCapture(input_image)
         ret, frame = capture.read()
         if ret:
-            capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1)
+            #capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1)
             f1.updateFace(frame)
-            f1.regFace();
-            f1.returnFrame()
-            
+            f1.regFace();           
             cv2.imshow("Faces", f1.returnFrame())
-            
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 #cv2.imwrite("face2.jpg", frame)
                 break
