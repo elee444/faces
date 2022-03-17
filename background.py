@@ -1,3 +1,8 @@
+"""
+Based on the code from 
+https://medium.com/generalist-dev/background-colour-detection-using-opencv-and-python-22ed8655b243
+by Daniel Parker
+"""
 import sys                      # System bindings
 import cv2                      # OpenCV bindings
 import numpy as np
@@ -54,12 +59,12 @@ class BackgroundColorDetector():
         #print(self.percentage_of_first)
         if self.percentage_of_first > 0.5:
             #print("Background color is ", self.number_counter[0][0])
-            return (0,0,0)
+            return (-1,-1,-1)
         else:
             return self.average_colour()
 
 
 if __name__ == "__main__":
-        img=cv2.imread("ucell1_1.jpg")
+        img=cv2.imread("l.jpg")
         BackgroundColor = BackgroundColorDetector(img)
         print(BackgroundColor.detect())
