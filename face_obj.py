@@ -31,25 +31,18 @@ import cv2
 import numpy as np
 import math
 #import keyboard
-#from background import BackgroundColorDetector
+from background import BackgroundColorDetector
 
 colortext=None
 #moving the square frame to enclose a face by mouse
 def mouse_mark_corners(event, x, y, flags, params):
     x1,y1,h,m=params[2].returnXYH()
-    #x1=params[2].Lx
-    #y1=params[2].Ly
     x2=x1+h
     y2=y1+h
-    #h=params[2].h
     if (params[3]==True):
         if params[0]==True:
-            #params[2].Lx=x
-            #params[2].Ly=y
             params[2].updateFace(x,y,x2,y2)
         if params[1]==True:
-            #params[2].Rx=x
-            #params[2].Ry=y
             params[2].updateFace(x1,y1,x,y)
          
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -57,7 +50,6 @@ def mouse_mark_corners(event, x, y, flags, params):
         if (((((x-5<=x1 and x1<=x+5) and (y-5<=y1 and y1<=y+5)) and params[0]==False) and
         params[1]==False) and params[3]==False):
             params[0]=True
-            #start=True
         elif (((((x-5<=x2 and x2<=x+5) and y-5<=y2 and y2<=y+5)and params[1]==False) and
         params[0]==False) and params[3]==False):
             params[1]=True
@@ -71,7 +63,7 @@ def mouse_mark_corners(event, x, y, flags, params):
             if params[1]==True:
                 params[1]=False
                 params[3]=False
-    """
+    
     tx=3*(x-x1)/h -m/8
     ty=3*(y-y1)/h -m/8
     if (0<tx and tx<3) and (0<ty and ty<3):
@@ -79,10 +71,9 @@ def mouse_mark_corners(event, x, y, flags, params):
         r=int(ty) 
         #colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).getColor())
         print(c,r, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
-    """  
+     
  # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
 def getcolor(color):
-    #r,g,b=map(int,color)
     r,g,b=color
     if (r >= 110) and (g >= 0 and g <= 65) and (b >= 0 and b <=80): #checked
         return 'r'
@@ -111,7 +102,6 @@ def getAverageRGBN(image):
 #there are 9 cells in a face. One in each box.
 #(row, col): top left=(0,0), bottom left=(2,0). cx's= col, ry's=row
 class Cell:
-    #id=0
     def __init__(self, row=0,col=0, cx1=0,cx2=0,ry1=0,ry2=0, img=None): 
         self.cx1=cx1
         self.cx2=cx2
@@ -119,7 +109,6 @@ class Cell:
         self.ry2=ry2
         self.row=row
         self.col=col  
-        #Cell.id=Cell.id+1
         self.color=None #y,o,r,g,w,b
         self.img=img
         self.colorRGB1=None #RGB
@@ -133,12 +122,12 @@ class Cell:
     def updateColor(self):
         if self.img is None:
             return
-        """
+        
         BackgroundColor = BackgroundColorDetector((self.img)) #find background color
         c1=BackgroundColor.detect()
         c2=getAverageRGBN(self.img)
         thecolor1=getcolor(c1)
-        thecolor2=getcolor(c2) #find the avg of the color
+        thecolor2=getcolor(c2) #find the avg of the color        
         if thecolor2!='?':  #Just pick one and cross our fingers
             self.color=thecolor2
         elif thecolor1!='?':
@@ -150,7 +139,9 @@ class Cell:
         """
         c2=getAverageRGBN(self.img)
         self.color=getcolor(c2)
+        self.colorRGB1=c1 
         self.colorRGB2=c2
+        """
         
     def getColor(self):
         return self.color
@@ -165,7 +156,6 @@ class Cell:
 
     
 class Face:  #a face of a 3x3 cube
-    #global theimg
     font = cv2.FONT_HERSHEY_SIMPLEX
     fontScale = 0.33  
     color = (0, 0, 0)  
@@ -183,24 +173,21 @@ class Face:  #a face of a 3x3 cube
         self.dx=(self.Rx-self.Lx)//24
         self.dy=(self.Ry-self.Ly)//24
         self.m=2
-        #self.imgs=[None]*3 #cell images
-        #self.c_colors=[[None, None, None]]*3 #cell colors
         self.cells=[None]*3 #coordinates of the centers of cells on this face - 9 cells/face
         self.frame=None #image of this face/frame
         for r in range(3):
-            #self.imgs[r]=[None]*3
             self.cells[r]=[None]*3
             for c in range(3):
                 cx1=self.Lx+c*self.boxx+self.m*self.dx
                 cx2=self.Lx+(c+1)*self.boxx-self.m*self.dx
                 ry1=self.Ly+r*self.boxy+self.m*self.dy
                 ry2=self.Ly+(r+1)*self.boxy-self.m*self.dy                 
-                (self.cells)[r][c]=Cell(r,c,cx1, cx2, ry1, ry2)#, self.frame[ry1:ry2,cx1:cx2])
-
+                (self.cells)[r][c]=Cell(r,c,cx1, cx2, ry1, ry2)
     
     #update frame each loop   
     def updateFrame(self, newframe):
         self.frame=newframe
+        self.updateFace(self.Lx, self.Ly,self.Rx, self.Ry)
     
     def updateFace(self,x1=0,y1=0,x2=0,y2=0):
         self.Lx=x1
@@ -219,22 +206,19 @@ class Face:  #a face of a 3x3 cube
                 ry1=self.Ly+r*self.boxy+self.m*self.dy
                 ry2=self.Ly+(r+1)*self.boxy-self.m*self.dy               
                 (self.cells)[r][c].updateCell(cx1, cx2, ry1, ry2, self.frame[ry1:ry2,cx1:cx2])
+                
     def returnFrame(self):
         return self.frame
     def returnXYH(self):
         return [self.Lx, self.Ly, self.h, self.m]
         
 
-    def regFace(self, params): #find colors on this face (9 boxes
-        #self.computeContours()  
+    def regFace(self, params): #register colors on this face (9 boxes - thus 9 smaller cells) 
         for r in range(3):
             for c in range(3):
                 #draw a smaller square in each box - called it a cell
                 cx1,cx2,ry1,ry2=(self.cells[r][c]).returnXY()
                 cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
-                #cropped cells
-                #img=(self.cells[r][c]).returnImg()
-                
                 """
                 name="ucell"+str(r)+"_"+str(c)+".jpg"
                 cv2.imwrite(name, (self.imgs)[r][c])
