@@ -1,4 +1,30 @@
 """
+Notation: https://ruwix.com/the-rubiks-cube/notation/
+kociema notation: https://www.programmersought.com/article/62995654340/
+cube: Face order: U, R, F, D, L, B  = Color (my cube) b, r, w, g, o, y
+Input cube string order: U1-9 R1-9 ... B1-9
+             |************|
+             |*U1**U2**U3*|
+             |************|
+             |*U4**U5**U6*|
+             |************|
+             |*U7**U8**U9*|
+             |************|
+ ************|************|************|************
+ *L1**L2**L3*|*F1**F2**F3*|*R1**R2**R3*|*B1**B2**B3*
+ ************|************|************|************
+ *L4**L5**L6*|*F4**F5**F6*|*R4**R5**R6*|*B4**B5**B6*
+ ************|************|************|************
+ *L7**L8**L9*|*F7**F8**F9*|*R7**R8**R9*|*B7**B8**B9*
+ ************|************|************|************
+             |************|
+             |*D1**D2**D3*|
+             |************|
+             |*D4**D5**D6*|
+             |************|
+             |*D7**D8**D9*|
+             |************|
+
 face: 1 face = 3x3 square boxes, each box has a square cell indexed by (r=row, c=col). Color of a box is determined
 by that of its cell.
 Top left = (0,0), Bottom left (2,0), etc.
@@ -23,8 +49,7 @@ Each cell should be at the center of a box
     |  |
     ----
         (cx2,ry2) 
-colors: the color (RGB) of each box is determined by the average color of the cell. Theoretically we only need to
-know the colors of the cells on (f)ront, (r)ight, (b)ack, (l)eft, (u)p and (d)own. 
+colors: the color (RGB) of each box is determined by the average color of the cell. 
 
 """
 import cv2
@@ -160,7 +185,7 @@ class Face:  #a face of a 3x3 cube
     fontScale = 0.33  
     color = (0, 0, 0)  
     thickness = 1
-    def __init__(self,id='f', x=212,y=160,h=200):#x=200,y=30,h=210): #id='f,b,r,l,u,d' default:x,y - top left box coord, h=side
+    def __init__(self,id='F', x=212,y=160,h=200):#x=200,y=30,h=210): #id='f,b,r,l,u,d' default:x,y - top left box coord, h=side
         #These are not the params for the image. They are for the square to be drawn on the image 
         self.id=id
         self.Lx=x
@@ -264,7 +289,7 @@ def main():
     cv2.namedWindow('Faces', 1)   
     input_image="f.jpg"
     read_image=1 #0:video - 1:image
-    faceList=['f','r','b','l','u','d'] #fid=0-5
+    faceList=['U','R','F','D','L','B'] #fid=0-5 in this order 
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
@@ -301,7 +326,7 @@ def main():
                 if read_image==1: #for testing purpose - read all 6 faces
                     fid=fid+1
                     if (fid<6): 
-                        input_image=faceList[fid]+'.jpg'
+                        input_image=faceList[fid].lower()+'.jpg'
                         params[0]=False
                         params[1]=False
                         params[2]=cube[fid]
