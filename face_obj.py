@@ -1,8 +1,7 @@
 """
 Notation: https://ruwix.com/the-rubiks-cube/notation/
-kociema notation: https://www.programmersought.com/article/62995654340/
 cube: Face order: U, R, F, D, L, B  = Color (my cube) b, r, w, g, o, y
-Input cube string order: U1-9 R1-9 ... B1-9
+Input cube string order: See https://github.com/hkociemba/RubiksCube-TwophaseSolver/blob/master/enums.py
              |************|
              |*U1**U2**U3*|
              |************|
@@ -24,6 +23,11 @@ Input cube string order: U1-9 R1-9 ... B1-9
              |************|
              |*D7**D8**D9*|
              |************|
+
+A cube definition string "UBL..." means for example: In position U1 we have the U-color, in position U2 we have the
+B-color, in position U3 we have the L color etc. according to the order U1, U2, U3, U4, U5, U6, U7, U8, U9, R1, R2,
+R3, R4, R5, R6, R7, R8, R9, F1, F2, F3, F4, F5, F6, F7, F8, F9, D1, D2, D3, D4, D5, D6, D7, D8, D9, L1, L2, L3, L4,
+L5, L6, L7, L8, L9, B1, B2, B3, B4, B5, B6, B7, B8, B9 of the enum constants.
 
 face: 1 face = 3x3 square boxes, each box has a square cell indexed by (r=row, c=col). Color of a box is determined
 by that of its cell.
@@ -57,6 +61,7 @@ import numpy as np
 import math
 #import keyboard
 from background import BackgroundColorDetector
+import twophase.solver  as sv  
 
 colortext=None
 #moving the square frame to enclose a face by mouse
