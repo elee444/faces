@@ -29,15 +29,6 @@ B-color, in position U3 we have the L color etc. according to the order U1, U2, 
 R3, R4, R5, R6, R7, R8, R9, F1, F2, F3, F4, F5, F6, F7, F8, F9, D1, D2, D3, D4, D5, D6, D7, D8, D9, L1, L2, L3, L4,
 L5, L6, L7, L8, L9, B1, B2, B3, B4, B5, B6, B7, B8, B9 of the enum constants.
 
-cubestring = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
-sv.solve(cubestring,19,2)
-returns '(0f)'
-
-cubestring = 'DUUBULDBFRBFRRULLLBRDFFFBLURDBFDFDRFRULBLUFDURRBLBDUDL'
-sv.solve(cubestring,19,2)
-returns 'L3 U1 B1 R2 F3 L1 F3 U2 L1 U3 B3 U2 B1 L2 F1 U2 R2 L2 B2 (19f)'
-
-
 face: 1 face = 3x3 square boxes, each box has a square cell indexed by (r=row, c=col). Color of a box is determined
 by that of its cell.
 Top left = (0,0), Bottom left (2,0), etc.
@@ -70,7 +61,7 @@ import numpy as np
 import math
 #import keyboard
 from background import BackgroundColorDetector
-import twophase.solver  as sv  
+#import twophase.solver  as sv  
 
 colortext=None
 #moving the square frame to enclose a face by mouse
@@ -102,7 +93,7 @@ def mouse_mark_corners(event, x, y, flags, params):
             if params[1]==True:
                 params[1]=False
                 params[3]=False
-    
+    """
     tx=3*(x-x1)/h -m/8
     ty=3*(y-y1)/h -m/8
     if (0<tx and tx<3) and (0<ty and ty<3):
@@ -110,6 +101,7 @@ def mouse_mark_corners(event, x, y, flags, params):
         r=int(ty) 
         #colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).getColor())
         print(c,r, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
+    """
      
  # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
 def getcolor(color):
@@ -150,7 +142,7 @@ class Cell:
         self.col=col  
         self.color=None #y,o,r,g,w,b
         self.img=img
-        self.colorRGB1=None #RGB
+        self.colorRGB1=None #RGB background
         self.colorRGB2=None #RGB
     def updateCell(self, cx1,cx2,ry1,ry2, img):
         self.cx1=cx1
@@ -160,27 +152,11 @@ class Cell:
         self.img=img
     def updateColor(self):
         if self.img is None:
-            return
-        """
-        BackgroundColor = BackgroundColorDetector((self.img)) #find background color
-        c1=BackgroundColor.detect()
-        c2=getAverageRGBN(self.img)
-        thecolor1=getcolor(c1)
-        thecolor2=getcolor(c2) #find the avg of the color        
-        if thecolor2!='?':  #Just pick one and cross our fingers
-            self.color=thecolor2
-        elif thecolor1!='?':
-            self.color=thecolor1
-        else:
-            self.color='?' #We are in big trouble!
-        self.colorRGB1=c1 #
-        self.colorRGB2=c2
-        """
-        c2=getAverageRGBN(self.img)
-        self.color=getcolor(c2)
-        #self.colorRGB1=c1 
-        self.colorRGB2=c2
-        
+            return 
+        #BackgroundColor = BackgroundColorDetector((self.img)) 
+        #self.colorRGB1=BackgroundColor.detect()
+        self.colorRGB2=getAverageRGBN(self.img)
+        self.color=getcolor(self.colorRGB2)
         
     def returnColor(self):
         return self.color
@@ -257,13 +233,14 @@ class Face:  #a face of a 3x3 cube
             for c in range(3):
                 #draw a smaller square in each box - called it a cell
                 cx1,cx2,ry1,ry2=(self.cells[r][c]).returnXY()
-                cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
+                
                 """
                 name="ucell"+str(r)+"_"+str(c)+".jpg"
                 cv2.imwrite(name, (self.imgs)[r][c])
                 """
                 if not params[3]:#two algorithhms to find the color of a cell
                     (self.cells[r][c]).updateColor()
+                cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
                 #put text-coordinates/colors
                 self.frame = cv2.putText(self.frame, str((r,c)),
                                      ((5*cx1+0*cx1)//5,(3*ry1+2*ry2)//5),Face.font,Face.fontScale,
@@ -284,11 +261,20 @@ class Face:  #a face of a 3x3 cube
 def callback(num):
     return
 
+
+yellow =(0,255,255)
+red=(0,0,255)
+white=(255,255,255)
+green=(30,255,100)
+blue=(255, 70, 0)
+orange=(0,70,255)
+colors={'yellow':(0,255,255), 'red':(0,0,255), 'white':(255,255,255), 'green':(30,255,100),'blue':(255, 70, 0),'orange':(0,70,255)}
+
 def main():
     #theimg# = np.zeros((480,640))
     #global point, drawing
     cv2.namedWindow('Settings', 0)
-    """
+    
     cv2.createTrackbar('Canny Thres 1', 'Settings', 87, 500, callback)
     cv2.createTrackbar('Canny Thres 2', 'Settings', 325, 500, callback)
     cv2.createTrackbar('Blur kSize', 'Settings', 9, 100, callback)
@@ -299,16 +285,19 @@ def main():
     cv2.createTrackbar('Contour G', 'Settings', 0, 255, callback)
     cv2.createTrackbar('Contour B', 'Settings', 255, 255, callback)
     cv2.createTrackbar('Exposure', 'Settings', 5, 12, callback)
-    """
-    cv2.namedWindow('Faces', 1)   
+    
+    cv2.namedWindow('Calibration', 1)
+    ctemp=iter(colors)
+    thisc=next(ctemp,None)
     input_image="f.jpg"
-    read_image=1 #0:video - 1:image
-    faceList=['U','R','F','D','L','B'] #fid=0-5 in this order 
+    read_image=0 #0:video - 1:image
+    faceList=['U','R','F','D','L','B'] #fid=0-5 in this order
+    #colorList=['blue', 'red', 'white', 'green', 'orange', 'yellow']
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
     params=[False,False, cube[fid], False] #top left , bottom right , the face, start moving a corner
-    cv2.setMouseCallback("Faces", mouse_mark_corners, params)
+    cv2.setMouseCallback('Calibration', mouse_mark_corners, params)
     if read_image==0:
         capture = cv2.VideoCapture(0)
     else:
@@ -326,30 +315,57 @@ def main():
             cube[fid].updateFrame(frame)
             cube[fid].regFace(params);
             if (fid<6):
-                thetext="Let's take care of '"+ str(faceList[fid])+"' face."
+                
+                thetext="Face "+str(fid+1)+" : All cells are in color "+ thisc
                 cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext,
-                                                  (20,50),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255), 1, cv2.LINE_AA))
-            cv2.imshow("Faces", cube[fid].returnFrame())
+                                                  (20,50),cv2.FONT_HERSHEY_SIMPLEX,1,colors[thisc], 2, cv2.LINE_AA))
+            cv2.imshow('Calibration', cube[fid].returnFrame())
             #cv2.imshow("Faces", frame)
             theKey=cv2.waitKey(1)
             if theKey == ord('q'): #quit
                 #cv2.imwrite("f.jpg", frame)
                 break
             elif theKey== ord('n'): #next face
-                #cv2.imwrite(faceList[fid]+".jpg", img)
-                if read_image==1: #for testing purpose - read all 6 faces
-                    fid=fid+1
-                    if (fid<6): 
-                        input_image=faceList[fid].lower()+'.jpg'
-                        params[0]=False
-                        params[1]=False
-                        params[2]=cube[fid]
-                        params[3]=False
-                    else:
-                        break
-                        
                 
-            
+                L=[(cube[fid].cells[r][c]).colorRGB2 for r in range(3) for c in range(3)]
+                maxc=['maxr','maxg','maxb']
+                minc=['minr','ming',',minb']
+                print(L)
+                """
+                for i,x in enumerate(maxc):
+                    locals()[x]=max(L, key=lambda item:item[i])[i]
+                for i,x in enumerate(minc):
+                    locals()[x]=min(L, key=lambda item:item[i])[i]
+                """
+                    
+                maxr=max(L, key=lambda item:item[0])[0]
+                maxg=max(L, key=lambda item:item[1])[1]
+                maxb=max(L, key=lambda item:item[2])[2]
+                minr=min(L, key=lambda item:item[0])[0]
+                ming=min(L, key=lambda item:item[1])[1]
+                minb=min(L, key=lambda item:item[2])[2]
+                
+                
+                print('Face=',thisc,' XYH=', cube[fid].returnXYH(), 'rangeR= ', ((5*minr-3*maxr)/2,(5*maxr-3*minr)/2),
+                    'rangeG= ', ((5*ming-3*maxg)/2,(5*maxg-3*ming)/2 ),
+                      'rangeB= ', ((5*minb-3*maxb)/2,(5*maxb-3*minb)/2) )
+                
+                fid=fid+1
+                if fid<6:
+                    thisc=next(ctemp,None)
+                    #cv2.imwrite(faceList[fid]+".jpg", img)
+                    params[0]=False
+                    params[1]=False
+                    params[2]=cube[fid]
+                    params[3]=False
+                    if read_image==1: #for testing purpose - read all 6 faces
+                        input_image=faceList[fid].lower()+'.jpg'
+                        #params[0]=False
+                        #params[1]=False
+                        #params[2]=cube[fid]
+                        #params[3]=False
+                else:
+                    break          
         else:
             break
     capture.release()
