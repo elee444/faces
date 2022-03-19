@@ -69,30 +69,24 @@ def mouse_mark_corners(event, x, y, flags, params):
     x1,y1,h,m=params[2].returnXYH()
     x2=x1+h
     y2=y1+h
-    if (params[3]==True):
-        if params[0]==True:
-            params[2].updateFace(x,y,x2,y2)
-        if params[1]==True:
-            params[2].updateFace(x1,y1,x,y)
-         
+    
+    if (params[0]==True):
+        params[2].updateFace(x,y,x2,y2)
+    if params[1]==True:
+        params[2].updateFace(x1,y1,x,y)
+        
     if event == cv2.EVENT_LBUTTONDOWN:
         #print("click down",x,y, x1, y1,x2,y2)
-        if (((((x-5<=x1 and x1<=x+5) and (y-5<=y1 and y1<=y+5)) and params[0]==False) and
-        params[1]==False) and params[3]==False):
+        if ((x-10<=x1 and x1<=x+10) and (y-10<=y1 and y1<=y+10)): #and        params[1]==False) and params[3]==False):
             params[0]=True
-        elif (((((x-5<=x2 and x2<=x+5) and y-5<=y2 and y2<=y+5)and params[1]==False) and
-        params[0]==False) and params[3]==False):
+            params[2].updateFace(x,y,x2,y2)
+        elif ((x-10<=x2 and x2<=x+10) and (y-10<=y2 and y2<=y+10)): # and params[0]==False) and params[3]==False):
             params[1]=True
+            params[2].updateFace(x1,y1,x,y)
     elif event == cv2.EVENT_LBUTTONUP:
-        if params[3]==False and (params[0]==True or params[1]==True):
-            params[3]=True
-        elif (params[3]==True):
-            if params[0]==True:
-                params[0]=False
-                params[3]=False
-            if params[1]==True:
-                params[1]=False
-                params[3]=False
+            params[0]=False
+            params[1]=False
+ 
     """
     tx=3*(x-x1)/h -m/8
     ty=3*(y-y1)/h -m/8
@@ -100,7 +94,7 @@ def mouse_mark_corners(event, x, y, flags, params):
         c=int(tx)
         r=int(ty) 
         #colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).getColor())
-        print(c,r, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
+        print(c,r)#, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
     """
      
  # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
@@ -238,8 +232,8 @@ class Face:  #a face of a 3x3 cube
                 name="ucell"+str(r)+"_"+str(c)+".jpg"
                 cv2.imwrite(name, (self.imgs)[r][c])
                 """
-                if not params[3]:#two algorithhms to find the color of a cell
-                    (self.cells[r][c]).updateColor()
+                #if not params[3]:#two algorithhms to find the color of a cell
+                (self.cells[r][c]).updateColor()
                 cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
                 #put text-coordinates/colors
                 self.frame = cv2.putText(self.frame, str((r,c)),
@@ -290,13 +284,13 @@ def main():
     ctemp=iter(colors)
     thisc=next(ctemp,None)
     input_image="f.jpg"
-    read_image=0 #0:video - 1:image
+    read_image=1 #0:video - 1:image
     faceList=['U','R','F','D','L','B'] #fid=0-5 in this order
     #colorList=['blue', 'red', 'white', 'green', 'orange', 'yellow']
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
-    params=[False,False, cube[fid], False] #top left , bottom right , the face, start moving a corner
+    params=[False, False, cube[fid]] #, False] #top left , bottom right , the face, start moving a corner
     cv2.setMouseCallback('Calibration', mouse_mark_corners, params)
     if read_image==0:
         capture = cv2.VideoCapture(0)
@@ -354,10 +348,10 @@ def main():
                 if fid<6:
                     thisc=next(ctemp,None)
                     #cv2.imwrite(faceList[fid]+".jpg", img)
-                    params[0]=False
-                    params[1]=False
+                    #params[0]=False
+                    #params[1]=False
                     params[2]=cube[fid]
-                    params[3]=False
+                    #params[3]=False
                     if read_image==1: #for testing purpose - read all 6 faces
                         input_image=faceList[fid].lower()+'.jpg'
                         #params[0]=False

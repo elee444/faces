@@ -74,6 +74,41 @@ import twophase.solver  as sv
 
 colortext=None
 #moving the square frame to enclose a face by mouse
+
+def mouse_mark_corners(event, x, y, flags, params):
+    x1,y1,h,m=params[2].returnXYH()
+    x2=x1+h
+    y2=y1+h
+    
+    if (params[0]==True):
+        params[2].updateFace(x,y,x2,y2)
+    if params[1]==True:
+        params[2].updateFace(x1,y1,x,y)
+        
+    if event == cv2.EVENT_LBUTTONDOWN:
+        #print("click down",x,y, x1, y1,x2,y2)
+        if ((x-10<=x1 and x1<=x+10) and (y-10<=y1 and y1<=y+10)): #and        params[1]==False) and params[3]==False):
+            params[0]=True
+            params[2].updateFace(x,y,x2,y2)
+        elif ((x-10<=x2 and x2<=x+10) and (y-10<=y2 and y2<=y+10)): # and params[0]==False) and params[3]==False):
+            params[1]=True
+            params[2].updateFace(x1,y1,x,y)
+    elif event == cv2.EVENT_LBUTTONUP:
+            params[0]=False
+            params[1]=False
+ 
+    """
+    tx=3*(x-x1)/h -m/8
+    ty=3*(y-y1)/h -m/8
+    if (0<tx and tx<3) and (0<ty and ty<3):
+        c=int(tx)
+        r=int(ty) 
+        #colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).getColor())
+        print(c,r)#, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
+    """
+
+
+"""
 def mouse_mark_corners(event, x, y, flags, params):
     x1,y1,h,m=params[2].returnXYH()
     x2=x1+h
@@ -110,8 +145,8 @@ def mouse_mark_corners(event, x, y, flags, params):
         r=int(ty) 
         #colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).getColor())
         print(c,r, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
-     
- # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
+"""     
+# compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
 def getcolor(color):
     r,g,b=color
     if (r >= 110) and (g >= 0 and g <= 65) and (b >= 0 and b <=80): #checked
@@ -262,8 +297,8 @@ class Face:  #a face of a 3x3 cube
                 name="ucell"+str(r)+"_"+str(c)+".jpg"
                 cv2.imwrite(name, (self.imgs)[r][c])
                 """
-                if not params[3]:#two algorithhms to find the color of a cell
-                    (self.cells[r][c]).updateColor()
+                #if not params[3]:#two algorithhms to find the color of a cell
+                (self.cells[r][c]).updateColor()
                 #put text-coordinates/colors
                 self.frame = cv2.putText(self.frame, str((r,c)),
                                      ((5*cx1+0*cx1)//5,(3*ry1+2*ry2)//5),Face.font,Face.fontScale,
@@ -307,7 +342,7 @@ def main():
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
-    params=[False,False, cube[fid], False] #top left , bottom right , the face, start moving a corner
+    params=[False,False, cube[fid]] #, False] #top left , bottom right , the face, start moving a corner
     cv2.setMouseCallback("Faces", mouse_mark_corners, params)
     if read_image==0:
         capture = cv2.VideoCapture(0)
@@ -344,7 +379,7 @@ def main():
                         params[0]=False
                         params[1]=False
                         params[2]=cube[fid]
-                        params[3]=False
+                        #params[3]=False
                     else:
                         break
                         
