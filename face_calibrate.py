@@ -346,9 +346,9 @@ def main():
                 minb=min(L, key=lambda item:item[2])[2]
                 
                 
-                print('Face=',thisc,' XYH=', cube[fid].returnXYH(), 'rangeR= ', ((5*minr-3*maxr)/2,(5*maxr-3*minr)/2),
-                    'rangeG= ', ((5*ming-3*maxg)/2,(5*maxg-3*ming)/2 ),
-                      'rangeB= ', ((5*minb-3*maxb)/2,(5*maxb-3*minb)/2) )
+                print('Face=',thisc,' XYH=', cube[fid].returnXYH(), 'rangeR= ', (max(0,(5*minr-3*maxr)/2),min(255,(5*maxr-3*minr)/2)),
+                    'rangeG= ', (max(0,(5*ming-3*maxg)/2),min(255,(5*maxg-3*ming)/2) ),
+                      'rangeB= ', (max(0,(5*minb-3*maxb)/2),min(255,(5*maxb-3*minb)/2)) )
                 
                 fid=fid+1
                 if fid<6:
