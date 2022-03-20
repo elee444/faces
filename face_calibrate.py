@@ -59,11 +59,12 @@ colors: the color (RGB) of each box is determined by the average color of the ce
 import cv2
 import numpy as np
 import math
+import json
 #import keyboard
-from background import BackgroundColorDetector
+#from background import BackgroundColorDetector
 #import twophase.solver  as sv  
 
-colortext=None
+#colortext=None
 #moving the square frame to enclose a face by mouse
 def mouse_mark_corners(event, x, y, flags, params):
     x1,y1,h,m=params[2].returnXYH()
@@ -71,18 +72,20 @@ def mouse_mark_corners(event, x, y, flags, params):
     y2=y1+h
     
     if (params[0]==True):
-        params[2].updateFace(x,y,x2,y2)
+        json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=(x,y,x2-x,m)
+        #params[2].updateFace(x,y,x2,y2)
     if params[1]==True:
-        params[2].updateFace(x1,y1,x,y)
+        json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=(x1,y1,x-x1,m)
+        #params[2].updateFace(x1,y1,x,y)
         
     if event == cv2.EVENT_LBUTTONDOWN:
         #print("click down",x,y, x1, y1,x2,y2)
         if ((x-10<=x1 and x1<=x+10) and (y-10<=y1 and y1<=y+10)): #and        params[1]==False) and params[3]==False):
             params[0]=True
-            params[2].updateFace(x,y,x2,y2)
+            #params[2].updateFace(x,y,x2,y2)
         elif ((x-10<=x2 and x2<=x+10) and (y-10<=y2 and y2<=y+10)): # and params[0]==False) and params[3]==False):
             params[1]=True
-            params[2].updateFace(x1,y1,x,y)
+            #params[2].updateFace(x1,y1,x,y)
     elif event == cv2.EVENT_LBUTTONUP:
             params[0]=False
             params[1]=False
@@ -93,28 +96,21 @@ def mouse_mark_corners(event, x, y, flags, params):
     if (0<tx and tx<3) and (0<ty and ty<3):
         c=int(tx)
         r=int(ty) 
-        #colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).getColor())
-        print(c,r)#, params[2].cells[r][c].colorRGB1, params[2].cells[r][c].colorRGB2)
+        colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).returnColor())
+        print(colortext)
     """
      
  # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
 def getcolor(color):
     r,g,b=color
-    if (r >= 110) and (g >= 0 and g <= 65) and (b >= 0 and b <=80): #checked
-        return 'r'
-    elif (r >= 150 and r <= 255 ) and (g >= 150 and g <= 255) and (b >= 150): #checked
-        return 'w'
-    elif (r >= 140 and r <= 255 ) and (g >= 140 and g <= 255) and (b >=0 and b <= 100): #checked
-        return 'y'
-    elif (r >= 150 and r <= 255 ) and (g >= 70 and g <= 140) and (b >=0 and b <= 70): #checked
-        return 'o'
-    elif (r >= 0 and r <= 70 ) and (g >= 0 and g <=120) and (b >= 100): #chcked
-        return 'b'
-    elif (r >= 0 and r <= 85 ) and (g >= 80 and g <= 165) and (b >= 40  and b <= 135): #checked
-        return 'g'
-    else:
-        return '?' #We are in trouble!
-    
+    #"""
+    for x in ['r','w','y','o','b','g']: #find colors
+        if (((r >= json_file[x][0][0] and r <= json_file[x][0][1] ) and #min<=r and r<= max
+        (g >= json_file[x][1][0] and g <=json_file[x][1][1]))
+        and (b >= json_file[x][2][0] and b<=json_file[x][2][1])): 
+            return x
+    return '?' #We are in trouble
+
 #find the average colors (rgb) in image. Assume the color of this box is uniform I hope -
 #colors: (r)ed, (b)lue, (o)range, (g)reen , (y)ellow , (w)hite
 def getAverageRGBN(image): 
@@ -151,6 +147,7 @@ class Cell:
         #self.colorRGB1=BackgroundColor.detect()
         self.colorRGB2=getAverageRGBN(self.img)
         self.color=getcolor(self.colorRGB2)
+        #print("Cell Color =",self.color)
         
     def returnColor(self):
         return self.color
@@ -227,11 +224,6 @@ class Face:  #a face of a 3x3 cube
             for c in range(3):
                 #draw a smaller square in each box - called it a cell
                 cx1,cx2,ry1,ry2=(self.cells[r][c]).returnXY()
-                
-                """
-                name="ucell"+str(r)+"_"+str(c)+".jpg"
-                cv2.imwrite(name, (self.imgs)[r][c])
-                """
                 #if not params[3]:#two algorithhms to find the color of a cell
                 (self.cells[r][c]).updateColor()
                 cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
@@ -255,43 +247,42 @@ class Face:  #a face of a 3x3 cube
 def callback(num):
     return
 
-
-yellow =(0,255,255)
-red=(0,0,255)
-white=(255,255,255)
-green=(30,255,100)
-blue=(255, 70, 0)
-orange=(0,70,255)
-colors={'yellow':(0,255,255), 'red':(0,0,255), 'white':(255,255,255), 'green':(30,255,100),'blue':(255, 70, 0),'orange':(0,70,255)}
-
+colors={'blue':(255, 70, 0), 'red':(0,0,255), 'white':(255,255,255), 'green':(30,255,100),  'orange':(0,70,255), 'yellow':(0,255,255)}
+#json_file={'x1':None,'y1':None,'h':None,'m':None,'b':None, 'r':None, 'w':None, 'g':None, 'o':None, 'y':None} #calibrate, then update json
+with open('data.json', 'r') as dj:
+    json_file = json.load(dj)
+"""
+print(json_file)
+while(1):
+    1
+"""
+#color None=[(minr,maxr),(ming,maxg),(minb,maxb)]
 def main():
-    #theimg# = np.zeros((480,640))
-    #global point, drawing
     cv2.namedWindow('Settings', 0)
-    
-    cv2.createTrackbar('Canny Thres 1', 'Settings', 87, 500, callback)
-    cv2.createTrackbar('Canny Thres 2', 'Settings', 325, 500, callback)
-    cv2.createTrackbar('Blur kSize', 'Settings', 9, 100, callback)
-    cv2.createTrackbar('Blur Sigma X', 'Settings', 75, 100, callback)
-    cv2.createTrackbar('Dilation Iterations', 'Settings', 2, 20, callback)
-    cv2.createTrackbar('Blob Area', 'Settings', 700, 1000, callback)
-    cv2.createTrackbar('Contour R', 'Settings', 0, 255, callback)
-    cv2.createTrackbar('Contour G', 'Settings', 0, 255, callback)
-    cv2.createTrackbar('Contour B', 'Settings', 255, 255, callback)
-    cv2.createTrackbar('Exposure', 'Settings', 5, 12, callback)
-    
+    cv2.createTrackbar('Min R', 'Settings', 0, 255, callback)
+    cv2.createTrackbar('Min G', 'Settings', 0, 255, callback)
+    cv2.createTrackbar('Min B', 'Settings', 0, 255, callback)
+    cv2.createTrackbar('Max R', 'Settings', 255, 255, callback)
+    cv2.createTrackbar('Max G', 'Settings', 255, 255, callback)
+    cv2.createTrackbar('Max B', 'Settings', 255, 255, callback)
+    cv2.createTrackbar('Exposure', 'Settings', 5, 12, callback)  
     cv2.namedWindow('Calibration', 1)
     ctemp=iter(colors)
     thisc=next(ctemp,None)
-    input_image="f.jpg"
+    
     read_image=1 #0:video - 1:image
-    faceList=['U','R','F','D','L','B'] #fid=0-5 in this order
-    #colorList=['blue', 'red', 'white', 'green', 'orange', 'yellow']
+    faceList=['U','R','F','D','L','B'] #fid=0-5 in this-['blue', 'red', 'white', 'green', 'orange', 'yellow']
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
     params=[False, False, cube[fid]] #, False] #top left , bottom right , the face, start moving a corner
     cv2.setMouseCallback('Calibration', mouse_mark_corners, params)
+    #json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=cube[fid].returnXYH()
+
+    #print('first json_file: ', json_file,'\n')
+    
+    input_image=faceList[fid].lower()+'_'+thisc[0]+".jpg"
+    
     if read_image==0:
         capture = cv2.VideoCapture(0)
     else:
@@ -302,69 +293,58 @@ def main():
         #frame = np.zeros((1024,1280))
         if read_image==1:
             capture= cv2.VideoCapture(input_image)
-        ret, theimg = capture.read()
-        frame=theimg.copy()
+        ret, origimg = capture.read()
+        frame=origimg.copy()
         if ret:
             capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1) #kinda useless
+            
             cube[fid].updateFrame(frame)
+            #json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=cube[fid].returnXYH()
+            cube[fid].updateFace(json_file['x1'],json_file['y1'],json_file['x1']+json_file['h'],json_file['y1']+json_file['h'])
             cube[fid].regFace(params);
-            if (fid<6):
-                
+            if (fid<6):               
                 thetext="Face "+str(fid+1)+" : All cells are in color "+ thisc
                 cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext,
                                                   (20,50),cv2.FONT_HERSHEY_SIMPLEX,1,colors[thisc], 2, cv2.LINE_AA))
             cv2.imshow('Calibration', cube[fid].returnFrame())
-            #cv2.imshow("Faces", frame)
             theKey=cv2.waitKey(1)
             if theKey == ord('q'): #quit
                 #cv2.imwrite("f.jpg", frame)
                 break
-            elif theKey== ord('n'): #next face
-                
+            elif theKey== ord('n'): #next face                
                 L=[(cube[fid].cells[r][c]).colorRGB2 for r in range(3) for c in range(3)]
-                maxc=['maxr','maxg','maxb']
-                minc=['minr','ming',',minb']
+                maxc=[None]*3 #['maxr','maxg','maxb']
+                minc=[None]*3 #['minr','ming',',minb']
                 print(L)
-                """
-                for i,x in enumerate(maxc):
-                    locals()[x]=max(L, key=lambda item:item[i])[i]
-                for i,x in enumerate(minc):
-                    locals()[x]=min(L, key=lambda item:item[i])[i]
-                """
-                    
-                maxr=max(L, key=lambda item:item[0])[0]
-                maxg=max(L, key=lambda item:item[1])[1]
-                maxb=max(L, key=lambda item:item[2])[2]
-                minr=min(L, key=lambda item:item[0])[0]
-                ming=min(L, key=lambda item:item[1])[1]
-                minb=min(L, key=lambda item:item[2])[2]
-                
-                
-                print('Face=',thisc,' XYH=', cube[fid].returnXYH(), 'rangeR= ', (max(0,(5*minr-3*maxr)/2),min(255,(5*maxr-3*minr)/2)),
-                    'rangeG= ', (max(0,(5*ming-3*maxg)/2),min(255,(5*maxg-3*ming)/2) ),
-                      'rangeB= ', (max(0,(5*minb-3*maxb)/2),min(255,(5*maxb-3*minb)/2)) )
-                
-                fid=fid+1
+                colorRanges=[None]*3
+                for i in range(3): #enumerate(maxc):
+                    #locals()[x]=max(L, key=lambda item:item[i])[i]
+                    maxc[i]=max(L, key=lambda item:item[i])[i]
+                    minc[i]=min(L, key=lambda item:item[i])[i]
+                    colorRanges[i]= (max(0,minc[i]-10),min(255,maxc[i]+10)) #+/- 10 just a guess. Try others if needed
+                print('max-min', maxc, minc)
+                print('Face=',thisc,' : To Json - XYH=', cube[fid].returnXYH(),'rangeRGB',colorRanges)
+                json_file[thisc[0]]=colorRanges                       
                 if fid<6:
-                    thisc=next(ctemp,None)
-                    #cv2.imwrite(faceList[fid]+".jpg", img)
-                    #params[0]=False
-                    #params[1]=False
-                    params[2]=cube[fid]
-                    #params[3]=False
-                    if read_image==1: #for testing purpose - read all 6 faces
-                        input_image=faceList[fid].lower()+'.jpg'
-                        #params[0]=False
-                        #params[1]=False
-                        #params[2]=cube[fid]
-                        #params[3]=False
-                else:
+                    fid=fid+1
+                    if read_image==0:
+                        cv2.imwrite(faceList[fid-1].lower()+'_'+thisc[0]+".jpg", origimg)
+                        params[2]=cube[fid]
+                        thisc=next(ctemp,None)
+                    else:
+                        if fid<6:            
+                            thisc=next(ctemp,None)
+                            input_image=faceList[fid].lower()+'_'+thisc[0]+'.jpg'                      
+                if fid==6:
                     break          
         else:
             break
+    
+    print('Print json_file :\n',json_file)
+    with open('data.json', 'w') as j_file:
+      json.dump(json_file, j_file)
     capture.release()
     cv2.destroyAllWindows()
     
 if __name__=='__main__':
-    #global point, drawing
     main()
