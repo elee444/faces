@@ -53,7 +53,12 @@ Each cell should be at the center of a box
     |  |
     ----
         (cx2,ry2) 
-colors: the color (RGB) of each box is determined by the average color of the cell. 
+colors: the color (RGB) of each box is determined by the average color of the cell.
+
+To calibrate:
+1) move mouse over the top left corner (red dot) or the right bottom corner.
+2) hold right mouse button and drag the corner to a new location, Then release the button.
+3) repeat the process to have the cube face nearly inside the white square 
 
 """
 import cv2
@@ -236,8 +241,8 @@ class Face:  #a face of a 3x3 cube
                                      Face.font,Face.fontScale, Face.color, Face.thickness, cv2.LINE_AA)
         cv2.rectangle(self.frame, (self.Lx, self.Ly),(self.Rx,self.Ry), (255, 255, 255))
         self.frame=cv2.circle(self.frame,(self.Lx, self.Ly),radius=5, color=(0,0,255), thickness=-1)
-        self.frame=cv2.circle(self.frame,(self.Rx, self.Ly),radius=1, color=(0,0,255), thickness=-1)
-        self.frame=cv2.circle(self.frame,(self.Lx, self.Ry),radius=1, color=(0,0,255), thickness=-1)
+        #self.frame=cv2.circle(self.frame,(self.Rx, self.Ly),radius=1, color=(0,0,255), thickness=-1)
+        #self.frame=cv2.circle(self.frame,(self.Lx, self.Ry),radius=1, color=(0,0,255), thickness=-1)
         self.frame=cv2.circle(self.frame,(self.Rx, self.Ry),radius=5, color=(0,0,255), thickness=-1)
                 
 #a cube has 6 faces f,r,b,l,u,d - prob no need to build a class for the cube 
@@ -271,11 +276,12 @@ def main():
     thisc=next(ctemp,None)
     
     read_image=1 #0:video - 1:image
-    faceList=['U','R','F','D','L','B'] #fid=0-5 in this-['blue', 'red', 'white', 'green', 'orange', 'yellow']
+    faceList=['U','R','F','D','L','B','_'] #fid=0-5 in this-['blue', 'red', 'white', 'green', 'orange', 'yellow']
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
     params=[False, False, cube[fid]] #, False] #top left , bottom right , the face, start moving a corner
+    facesToStore=[None]*6 #None=[name,face_image]
     cv2.setMouseCallback('Calibration', mouse_mark_corners, params)
     #json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=cube[fid].returnXYH()
 
@@ -289,7 +295,8 @@ def main():
         capture= cv2.VideoCapture(input_image)
 
     while (capture.isOpened()):
-        theimg = np.zeros((480,640))
+
+        thiscolor=(0, 0, 0)
         #frame = np.zeros((1024,1280))
         if read_image==1:
             capture= cv2.VideoCapture(input_image)
@@ -299,19 +306,24 @@ def main():
             capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1) #kinda useless
             
             cube[fid].updateFrame(frame)
-            #json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=cube[fid].returnXYH()
             cube[fid].updateFace(json_file['x1'],json_file['y1'],json_file['x1']+json_file['h'],json_file['y1']+json_file['h'])
-            cube[fid].regFace(params);
+            cube[fid].regFace(params)
+            
             if (fid<6):               
-                thetext="Face "+str(fid+1)+" : All cells are in color "+ thisc
-                cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext,
-                                                  (20,50),cv2.FONT_HERSHEY_SIMPLEX,1,colors[thisc], 2, cv2.LINE_AA))
+                thetext1="Face "+str(fid+1)+" : All cells are in color "+ thisc
+                thetext2="Enter 'c' to probe the face."
+                thiscolor=colors[thisc]
+                
+            cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext1,
+                                                (20,50),cv2.FONT_HERSHEY_SIMPLEX,1,thiscolor, 2, cv2.LINE_AA))
+            cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext2,
+                                                (20,75),cv2.FONT_HERSHEY_SIMPLEX,1,thiscolor, 2, cv2.LINE_AA))
             cv2.imshow('Calibration', cube[fid].returnFrame())
             theKey=cv2.waitKey(1)
             if theKey == ord('q'): #quit
                 #cv2.imwrite("f.jpg", frame)
                 break
-            elif theKey== ord('n'): #next face                
+            elif theKey== ord('c'): #next face                
                 L=[(cube[fid].cells[r][c]).colorRGB2 for r in range(3) for c in range(3)]
                 maxc=[None]*3 #['maxr','maxg','maxb']
                 minc=[None]*3 #['minr','ming',',minb']
@@ -328,21 +340,24 @@ def main():
                 if fid<6:
                     fid=fid+1
                     if read_image==0:
-                        cv2.imwrite(faceList[fid-1].lower()+'_'+thisc[0]+".jpg", origimg)
+                        #cv2.imwrite(faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg)
+                        facesToStore[fid-1]=[faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg]
                         params[2]=cube[fid]
                         thisc=next(ctemp,None)
                     else:
                         if fid<6:            
                             thisc=next(ctemp,None)
                             input_image=faceList[fid].lower()+'_'+thisc[0]+'.jpg'                      
-                if fid==6:
+            if 6<=fid:
+                thetext1="Done calibration!"
+                thetext2="Enter 's' to save or 'q' to quit"
+                if theKey==ord('s'):
+                    print('Store json_file :\n',json_file)
+                    with open('data.json', 'w') as j_file:
+                        json.dump(json_file, j_file)                     
                     break          
         else:
             break
-    
-    print('Print json_file :\n',json_file)
-    with open('data.json', 'w') as j_file:
-      json.dump(json_file, j_file)
     capture.release()
     cv2.destroyAllWindows()
     
