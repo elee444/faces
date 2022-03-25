@@ -69,10 +69,13 @@ import json
 import os
 import os.path
 import sys
-sys.path.insert(0, '/home/leee/Rubiks/color_recognition/src/')
+sys.path.insert(0, '/home/leee/Rubiks/faces')
   
 from color_recognition_api import color_histogram_feature_extraction
 from color_recognition_api import knn_classifier
+
+#origimg=np.zeros((1024,1280))
+
 #import keyboard
 #from background import BackgroundColorDetector
 #import twophase.solver  as sv  
@@ -86,19 +89,15 @@ def mouse_mark_corners(event, x, y, flags, params):
     
     if (params[0]==True):
         json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=(x,y,x2-x,m)
-        #params[2].updateFace(x,y,x2,y2)
     if params[1]==True:
         json_file['x1'],json_file['y1'],json_file['h'],json_file['m']=(x1,y1,x-x1,m)
-        #params[2].updateFace(x1,y1,x,y)
         
     if event == cv2.EVENT_LBUTTONDOWN:
         #print("click down",x,y, x1, y1,x2,y2)
         if ((x-10<=x1 and x1<=x+10) and (y-10<=y1 and y1<=y+10)): #and        params[1]==False) and params[3]==False):
             params[0]=True
-            #params[2].updateFace(x,y,x2,y2)
         elif ((x-10<=x2 and x2<=x+10) and (y-10<=y2 and y2<=y+10)): # and params[0]==False) and params[3]==False):
             params[1]=True
-            #params[2].updateFace(x1,y1,x,y)
     elif event == cv2.EVENT_LBUTTONUP:
             params[0]=False
             params[1]=False
@@ -108,17 +107,15 @@ def getcolor(color, img, knn=False):
     if knn==False:
         r,g,b=color
         Dc=0
-        #"""
         for x in ['r','w','y','o','b','g']: #find colors
             if (((r >= max(json_file[x][0][0]-Dc,0) and r <= min(json_file[x][0][1]+Dc,255) ) and #min<=r and r<= max
             (g >= max(json_file[x][1][0]-Dc,0) and g <=min(json_file[x][1][1]+Dc,255)))
             and (b >= max(json_file[x][2][0]-Dc,0) and b<=min(json_file[x][2][1]+Dc,255))): 
                 return x
         return '?' #We are in trouble
-    else:
+    else:  #Use knn
         color_histogram_feature_extraction.color_histogram_of_test_image(img)
         prediction = knn_classifier.main('training.data', 'test.data')
-        #print("prediction = ", prediction)
         x=prediction[0]
         if (((((x=='b' or x=='r') or x=='g') or x=='w') or x=='y') or x=='o'):
             return x
@@ -207,7 +204,7 @@ class Face:  #a face of a 3x3 cube
     #update frame each loop   
     def updateFrame(self, newframe):
         self.frame=newframe
-        self.updateFace(self.Lx, self.Ly,self.Rx, self.Ry)
+        #self.updateFace(self.Lx, self.Ly,self.Rx, self.Ry)
     
     def updateFace(self,x1=0,y1=0,x2=0,y2=0):
         self.Lx=x1
@@ -233,26 +230,30 @@ class Face:  #a face of a 3x3 cube
         return [self.Lx, self.Ly, self.h, self.m]
         
 
-    def regFace(self, params): #register colors on this face (9 boxes - thus 9 smaller cells) 
+    def regFace(self, params, frame): #register colors on this face (9 boxes - thus 9 smaller cells) 
         for r in range(3):
             for c in range(3):
                 #draw a smaller square in each box - called it a cell
                 cx1,cx2,ry1,ry2=(self.cells[r][c]).returnXY()
                 #if not params[3]:#two algorithhms to find the color of a cell
                 (self.cells[r][c]).updateColor()
-                cv2.rectangle(self.frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
+                cv2.rectangle(frame, (cx1, ry1),(cx2,ry2), (0, 0, 0))
                 #put text-coordinates/colors
-                self.frame = cv2.putText(self.frame, str((r,c)),
+                cv2.putText(frame, str((r,c)),
                                      ((5*cx1+0*cx1)//5,(3*ry1+2*ry2)//5),Face.font,Face.fontScale,
                                      Face.color, Face.thickness, cv2.LINE_AA)
-                self.frame = cv2.putText(self.frame, (self.cells[r][c]).returnColor(),
+                cv2.putText(frame, (self.cells[r][c]).returnColor(),
                                          ((4*cx1+1*cx2)//5,(1*ry1+4*ry2)//5),
                                      Face.font,Face.fontScale, Face.color, Face.thickness, cv2.LINE_AA)
-        cv2.rectangle(self.frame, (self.Lx, self.Ly),(self.Rx,self.Ry), (255, 255, 255))
-        self.frame=cv2.circle(self.frame,(self.Lx, self.Ly),radius=5, color=(0,0,255), thickness=-1)
+                
+        
+        cv2.rectangle(frame, (self.Lx, self.Ly),(self.Rx,self.Ry), (255, 255, 255))
+        cv2.circle(frame,(self.Lx, self.Ly),radius=5, color=(0,0,255), thickness=-1)
         #self.frame=cv2.circle(self.frame,(self.Rx, self.Ly),radius=1, color=(0,0,255), thickness=-1)
         #self.frame=cv2.circle(self.frame,(self.Lx, self.Ry),radius=1, color=(0,0,255), thickness=-1)
-        self.frame=cv2.circle(self.frame,(self.Rx, self.Ry),radius=5, color=(0,0,255), thickness=-1)
+        cv2.circle(frame,(self.Rx, self.Ry),radius=5, color=(0,0,255), thickness=-1)
+        return frame        
+  
                 
 #a cube has 6 faces f,r,b,l,u,d - prob no need to build a class for the cube 
 #def Cube: 
@@ -286,7 +287,7 @@ def main():
     ctemp=iter(colors)
     thisc=next(ctemp,None)
     
-    read_image=1 #0:video - 1:image
+    read_image=0 #0:video - 1:image
     faceList=['U','R','F','D','L','B','_'] #fid=0-5 in this-['blue', 'red', 'white', 'green', 'orange', 'yellow']
     fid=0
     cube=[Face(id=x) for x in faceList]
@@ -294,7 +295,7 @@ def main():
     params=[False, False, cube[fid]] #, False] #top left , bottom right , the face, start moving a corner
     facesToStore=[None]*6 #None=[name,face_image]
     cv2.setMouseCallback('Face', mouse_mark_corners, params)
-    
+    #global origimg
     
     input_image=faceList[fid].lower()+".jpg"
     
@@ -304,7 +305,6 @@ def main():
         capture= cv2.VideoCapture(input_image)
 
     while (capture.isOpened()):
-
         thiscolor=(0, 0, 0)
         #frame = np.zeros((1024,1280))
         if read_image==1:
@@ -312,45 +312,52 @@ def main():
         ret, origimg = capture.read()
         frame=origimg.copy()
         if ret:
-            #capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1) #kinda useless
-            
+            #capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1) #kinda useless          
             cube[fid].updateFrame(frame)
             cube[fid].updateFace(json_file['x1'],json_file['y1'],json_file['x1']+json_file['h'],json_file['y1']+json_file['h'])
-            cube[fid].regFace(params)
+            origimg=cube[fid].regFace(params, origimg)
             
             if (fid<6):               
                 thetext1="Face "+str(fid+1)+" : All cells are in color "+ thisc
                 thetext2="Enter 'n' for the face."
                 thiscolor=colors[thisc]
-                
-            cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext1,
+
+            cube[fid].updateFrame(cv2.putText(origimg, thetext1,
                                                 (20,50),cv2.FONT_HERSHEY_SIMPLEX,1,thiscolor, 2, cv2.LINE_AA))
-            cube[fid].updateFrame(cv2.putText(cube[fid].returnFrame(), thetext2,
+            cube[fid].updateFrame(cv2.putText(origimg, thetext2,
                                                 (20,75),cv2.FONT_HERSHEY_SIMPLEX,1,thiscolor, 2, cv2.LINE_AA))
-            cv2.imshow('Face', cube[fid].returnFrame())
+            
+            cv2.imshow('Face', origimg)
+            
             theKey=cv2.waitKey(1)
             if theKey == ord('q'): #quit
                 #cv2.imwrite("f.jpg", frame)
                 break
             elif theKey== ord('n'): #next face                
-                L=[(cube[fid].cells[r][c]).colorRGB2 for r in range(3) for c in range(3)]
-                         
+                L=[(cube[fid].cells[r][c]).colorRGB2 for r in range(3) for c in range(3)]         
                 if fid<6:
                     fid=fid+1
                     if read_image==0:
-                        #cv2.imwrite(faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg)
-                        #facesToStore[fid-1]=[faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg]
+                         #facesToStore[fid-1]=[faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg]
                         params[2]=cube[fid]
                         thisc=next(ctemp,None)
                     else:
-                        if fid<6:            
+                        if fid<6:
                             thisc=next(ctemp,None)
                             input_image=faceList[fid].lower()+'.jpg'                      
             if 6<=fid:
                 thetext1="Found all cell colors!"
                 thetext2="Enter 'r' to run or 'q' to quit"
                 if theKey==ord('r'):
-                    #run
+                    """
+                    for f in range(6):
+                        for r in range(3):
+                            for c in range(3):
+                                print("crop image")
+                                cv2.imwrite('./training_dataset/'+faceList[f].lower()+'0_0'+str(r)+str(c)+'.jpg',
+                                            cube[f].cells[r][c].returnImg())
+                    """
+                    #generate the proper cube representation and then call cube solver here 
                     continue
         else:
             break

@@ -19,7 +19,7 @@ try:
     source_image = cv2.imread(sys.argv[1])
 except:
     #source_image = cv2.imread('black_cat.jpg')
-    source_image = cv2.imread('b_y.jpg')
+    source_image = cv2.imread('l_o.jpg')
 """
 def main(img):
     source_image = img
@@ -57,4 +57,4 @@ while(1):
         break
 """
 if __name__=="__main__":
-    main(cv2.imread('b_y.jpg'))
+    main(cv2.imread('r_r.jpg'))
