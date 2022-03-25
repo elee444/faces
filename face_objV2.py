@@ -102,17 +102,7 @@ def mouse_mark_corners(event, x, y, flags, params):
     elif event == cv2.EVENT_LBUTTONUP:
             params[0]=False
             params[1]=False
- 
-    """
-    tx=3*(x-x1)/h -m/8
-    ty=3*(y-y1)/h -m/8
-    if (0<tx and tx<3) and (0<ty and ty<3):
-        c=int(tx)
-        r=int(ty) 
-        colortext="Color on ("+str(r)+","+str(c)+") ="+str(((params[2].cells)[r][c]).returnColor())
-        print(colortext)
-    """
-     
+
  # compare rgb values and return color. Values were obtained via experiments. Might have to adjust these.
 def getcolor(color, img, knn=False):
     if knn==False:
@@ -128,6 +118,7 @@ def getcolor(color, img, knn=False):
     else:
         color_histogram_feature_extraction.color_histogram_of_test_image(img)
         prediction = knn_classifier.main('training.data', 'test.data')
+        #print("prediction = ", prediction)
         x=prediction[0]
         if (((((x=='b' or x=='r') or x=='g') or x=='w') or x=='y') or x=='o'):
             return x
