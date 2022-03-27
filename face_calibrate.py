@@ -287,7 +287,7 @@ def main():
 
     #print('first json_file: ', json_file,'\n')
     
-    input_image=faceList[fid].lower()+'_'+thisc[0]+".jpg"
+    input_image=faceList[fid].lower()+'_'+str(fid)+".jpg"
     
     if read_image==0:
         capture = cv2.VideoCapture(0)
