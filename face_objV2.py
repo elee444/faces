@@ -299,7 +299,7 @@ def generateCubeSeq(thecube):
                 
     #Now run through each cell ion each face to generate the seq
         
-          
+      
                     
 #a cube has 6 faces f,r,b,l,u,d - prob no need to build a class for the cube 
 #def Cube: 
@@ -308,12 +308,15 @@ def generateCubeSeq(thecube):
 def callback(num):
     return
 
+
+
 colorToSeq={'b':'U','r':'R', 'w':'F', 'g':'D',  'o':'L', 'y':'B'} #default - update as we go
 #colors={'blue':(255, 70, 0), 'red':(0,0,255), 'white':(255,255,255), 'green':(30,255,100),  'orange':(0,70,255), 'yellow':(0,255,255)}
 colors={'b':(255, 70, 0), 'r':(0,0,255), 'w':(255,255,255), 'g':(30,255,100),  'o':(0,70,255), 'y':(0,255,255), 's':(192,192,192)}
 faceList=['U','R','F','D','L','B','_'] #fid=0-5 in this-['blue', 'red', 'white', 'green', 'orange', 'yellow']
 #json_file={'x1':None,'y1':None,'h':None,'m':None,'b':None, 'r':None, 'w':None, 'g':None, 'o':None, 'y':None} #calibrate, then update json
-with open('data.json', 'r') as dj:
+PATH="./testcubes/cube2/"
+with open(PATH+'data.json', 'r') as dj:
     json_file = json.load(dj)
 """
 print(json_file)
@@ -331,12 +334,12 @@ def main():
     cv2.createTrackbar('Max G', 'Settings', 255, 255, callback)
     cv2.createTrackbar('Max B', 'Settings', 255, 255, callback)
     cv2.createTrackbar('Exposure', 'Settings', 5, 12, callback)
+    
+    cv2.createTrackbar('Brightness', 'Settings', 255, 2 * 255, callback)
     cv2.namedWindow('Face', 1)
     ctemp=iter(colors)
     thisc=next(ctemp,None)
-    
-    read_image=1 #0:video - 1:image
-    
+      
     fid=0
     cube=[Face(id=x) for x in faceList]
     #f1=Face(id='F')#,x=400,y=200,h=300 ) 
@@ -345,8 +348,8 @@ def main():
     cv2.setMouseCallback('Face', mouse_mark_corners, params)
     #global origimg
     
-    input_image=faceList[fid].lower()+"_"+str(fid)+".jpg"
-    
+    input_image=PATH+faceList[fid].lower()+"_"+str(fid)+".jpg"
+    read_image=0 #0:video - 1:image
     if read_image==0:
         capture = cv2.VideoCapture(0)
     else:
@@ -361,7 +364,7 @@ def main():
         frame=origimg.copy()
         scanned_cube=np.zeros((360, 480, 3), dtype = "uint8")
         if ret:
-            capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*-1) #kinda useless          
+            #capture.set(cv2.CAP_PROP_EXPOSURE, (cv2.getTrackbarPos('Exposure', 'Settings')+1)*(-1)) #kinda useless
             cube[fid].updateFrame(frame)
             cube[fid].updateFace(json_file['x1'],json_file['y1'],json_file['x1']+json_file['h'],json_file['y1']+json_file['h'])
             origimg=cube[fid].regFace(params, origimg) #find and update colors in this face
@@ -391,14 +394,14 @@ def main():
                 if fid<6:
                     fid=fid+1
                     if read_image==0:
-                         #facesToStore[fid-1]=[faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg]
-                        #cv2.imwrite(faceList[fid-1].lower()+'_'+str(fid-1)+'.jpg', frame)
+                        #facesToStore[fid-1]=[faceList[fid-1].lower()+'_'+thisc[0]+'.jpg', origimg]
+                        #cv2.imwrite(PATH+faceList[fid-1].lower()+'_'+str(fid-1)+'.jpg', frame)
                         params[2]=cube[fid]
                         thisc=next(ctemp,None)
                     else:
                         if fid<6:
                             thisc=next(ctemp,None)
-                            input_image=faceList[fid].lower()+"_"+str(fid)+".jpg"
+                            input_image=PATH+faceList[fid].lower()+"_"+str(fid)+".jpg"
                             #input_image=faceList[fid].lower()+'.jpg'                      
             if 6<=fid:
                 thetext1="Found all cell colors!"
